@@ -446,3 +446,46 @@ app/views/users/edit.html.erb を修正
 
 <%= link_to 'Back', users_path %>
 ```
+
+### メール送信内容のプレビュー確認
+
+メールのコンポーネントを生成
+```
+$ bundle exec rails generate mailer news
+      create  app/mailers/news_mailer.rb
+      invoke  erb
+      create    app/views/news_mailer
+      invoke  test_unit
+      create    test/mailers/news_mailer_test.rb
+      create    test/mailers/previews/news_mailer_preview.rb
+```
+
+NewsMailer(app/mailers/news_mailer.rb)に daily メソッドを追加
+```
+class NewsMailer < ApplicationMailer
+
+  default from: "from@example.com"
+  def daily(datetime)
+    @delivered_at = datetime
+    mail to: "to@example.com"
+  end
+
+end
+```
+
+app/views/news_mailer/daily.text.erb ファイルを作成
+```
+Railsデイリーニュース
+配信:<%= @delivered_at %>
+```
+
+test/mailers/previews/news_mailer_preview.rb を編集
+```
+class NewsMailerPreview < ActionMailer::Preview
+  def daily_news
+    NewsMailer.daily(DateTime.now)
+  end
+end
+```
+
+http://localhost:3000/rails/mailers/news_mailer/daily_news にアクセスしてメールのプレビューを確認
