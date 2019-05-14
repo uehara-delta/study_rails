@@ -377,3 +377,72 @@ app/views/users/index.html.erb を編集
     </tr>
     <% end %>
 ```
+
+## リファクタリング
+
+### アクションの共通処理をフィルターに変更
+
+UsersController(app/controllers/users_controller.rb) を修正
+```ruby
+  before_action :set_user, only: %w(show edit update destroy)
+
+  def show
+  end
+
+  def edit
+  end
+
+  def update
+    if @user.update(user_params)
+      redirect_to user_url(@user)
+    else
+      render 'edit'
+    end
+  end
+
+  def destroy
+    @user.destroy
+    redirect_to users_url
+  end
+
+  def set_user
+    @user = User.find(params[:id])
+  end
+```
+
+### new アクションのビューと edit アクションのビューで部分テンプレートを使用
+
+app/views/users/_form.html.erb を作成
+```erb
+<%= form_for(@user) do |f| %>
+<div class="field">
+  <%= f.label :name %><br>
+  <%= f.text_field :name %>
+</div>
+<div class="field">
+  <%= f.label :department %><br>
+  <%= f.text_field :department %>
+</div>
+<div class="actions">
+  <%= f.submit %>
+</div>
+<% end %>
+```
+
+app/views/users/new.html.erb を修正
+```erb
+<h1>新規利用者</h1>
+
+<%= render 'form' %>
+
+<%= link_to 'Back', users_path %>
+```
+
+app/views/users/edit.html.erb を修正
+```erb
+<h1>ユーザー編集</h1>
+
+<%= render 'form' %>
+
+<%= link_to 'Back', users_path %>
+```
