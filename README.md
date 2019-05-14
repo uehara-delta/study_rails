@@ -461,7 +461,7 @@ $ bundle exec rails generate mailer news
 ```
 
 NewsMailer(app/mailers/news_mailer.rb)に daily メソッドを追加
-```
+```ruby
 class NewsMailer < ApplicationMailer
 
   default from: "from@example.com"
@@ -480,7 +480,7 @@ Railsデイリーニュース
 ```
 
 test/mailers/previews/news_mailer_preview.rb を編集
-```
+```ruby
 class NewsMailerPreview < ActionMailer::Preview
   def daily_news
     NewsMailer.daily(DateTime.now)
