@@ -1,7 +1,11 @@
 # Rails 勉強メモ
 
 * 参考
+	* https://www.atmarkit.co.jp/ait/articles/1402/28/news047.html
 	* https://www.atmarkit.co.jp/ait/articles/1403/28/news035.html
+	* https://www.atmarkit.co.jp/ait/articles/1405/09/news038.html
+	* https://www.atmarkit.co.jp/ait/articles/1405/16/news024.html
+	* https://www.atmarkit.co.jp/ait/articles/1405/30/news036.html
 	* https://qiita.com/yuitnnn/items/b45bba658d86eabdbb26
 
 ## Railsプロジェクト作成
@@ -447,6 +451,8 @@ app/views/users/edit.html.erb を修正
 <%= link_to 'Back', users_path %>
 ```
 
+## Rails 4.1 の新機能
+
 ### メール送信内容のプレビュー確認
 
 メールのコンポーネントを生成
@@ -489,3 +495,128 @@ end
 ```
 
 http://localhost:3000/rails/mailers/news_mailer/daily_news にアクセスしてメールのプレビューを確認
+
+## ActiveRecord の基本機能
+
+### テーブルの変更
+
+```
+$ bundle exec rails generate migration update_users
+      invoke  active_record
+      create    db/migrate/20190514070114_update_users.rb
+```
+
+db/migrate/20190514070114_update_users.rb を編集
+```ruby
+class UpdateUsers < ActiveRecord::Migration[5.2]
+  def change
+    add_column :users, :age, :integer
+    add_column :users, :last_score, :integer
+    add_column :users, :averate, :float
+    add_column :users, :zip_code, :string
+    add_column :users, :tel, :string
+    add_column :users, :contact_type, :string, default: 'phone'
+  end
+end
+```
+
+```
+$ bundle exec rake db:migrate
+```
+
+### モデルオブジェクトの生成/保存
+
+* new
+	* モデルオブジェクトの生成
+* save
+	* newで生成したオブジェクトをデータベースに保存
+* changed?
+	* モデルオブジェクトにデータベースに保存していない変更があるか確認
+* create
+	* newメソッドとsageメソッドを同時に実行
+* update
+	* モデルオブジェクトの変更とデータベースの更新を同時に実行
+
+### モデルオブジェクトの削除
+
+* destroy
+	* モデルオブジェクトをデータベースから削除
+* destroyed?
+	* モデルオブジェクトがデータベースから削除済みか確認
+
+### モデルオブジェクトの検索
+
+* find
+	* 主キーを引数としてデータベースのレコード1つを取り出す
+* where
+	* 条件に当てはまるレコードをすべて取り出す
+* pluck
+	* where の戻り値に対して、属性値のみを取得し配列として返す
+	* ActiveRecord オブジェクトを生成しないので高速に動作する
+* order
+	* カラムの値に基づき整列したレコードを取得する
+* limit
+	* 取得するレコード数の上限を指定する
+
+### マイグレーションファイル
+
+* `rails generate migration` コマンドでマイグレーションファイルを生成できる
+* 引数に「AddXXXToYYY」や「RemoveXXXFromYYY」と指定すると「XXX」というカラムを「YYY：というテーブルに追加・削除するためのコードをマイグレーションファイルに実装してくれる
+
+* マイグレーションファイルで使用できる ActiveRecord のメソッド
+	* create_table(name, options)
+	* drop_table(name)
+	* change_table(name, options)
+	* rename_table(old_name, new_name)
+	* add_column(table_name, column_name, type, options)
+	* rename_column(table_name, column_name, new_column_name)
+	* change_column(table_name, column_name, type, options)
+	* remove_column(table_name, column_name, type, options)
+		* migration で rollback する場合は type が必須
+	* add_index(table_name, column_names, options)
+	* remove_index(table_name, column: column_name)
+	* remove_index(table_name, name: index_name)
+
+* type で適用できる型
+	* :string
+	* :text
+	* :integer
+	* :float
+	* :decimal
+	* :datetime
+	* :timestamp
+	* :time
+	* :date
+	* :binary
+	* :boolean
+
+### validates メソッド
+
+属性の値がデータベースに反映される前に適切であるかを検証する仕組み
+
+* errors.messages
+	* 属性名とエラーメッセージの Hash で返す
+* errors.full_massages
+	* すべての属性のエラーメッセージを一次元の配列で返す
+
+* validates メソッドで使える主なバリデーション
+	* presence : 値が空でないかを検証
+	* length : 指定した属性の長さを検証
+	* format : 指定した属性が正規表現にマッチするかを検証
+	* uniqueness : 指定した属性がデータベース中で重複していないかを検証
+	* numericality : 指定した属性が数値であるかを検証
+	* inclusion : 指定した属性が配列または範囲に含まれているかを検証
+	* acceptance : チェックボックにチェックが入ってるかを検証
+	* confirmation : 確認用の一時属性と値が同じかどうかを検証
+	* exclusion : inclusion の逆で属性が配列または範囲に含まれていないかを検証
+	* absence : 空白であることを検証
+
+* validates メソッドの便利なオプション
+	* allow_nil : 属性が空の時、バリデーションをスキップ
+	* if, unless : バリデーションの実行条件を定義
+
+* validates をスキップするメソッド
+	* update_all : where で得られたモデルオブジェクトの集合すべてに対して更新を行う
+	* update_attribute : バリデーションをせず、特定のカラムを更新するモデルオブジェクトのメソッド
+	* update_column : バリデーションとコールバックをせず、特定のカラムを更新するモデルオブジェクトのメソッド
+	* update_columns : バリデーションとコールバックをせず、複数のカラムを更新するモデルオブジェクトのメソッド
