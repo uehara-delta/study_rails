@@ -770,13 +770,13 @@ class Book < ApplicationRecord
 end
 ```
 	* コールバックメソッドの引数に処理を記述した文字列を指定
-```ruby
+	  ```ruby
 class Book < ApplicationRecord
   after_save "self.user.increament!(:book_size)"
 end
 ```
 	* コールバックメソッドにブロックを指定
-```ruby
+	  ```ruby
 class Book < ApplicationRecord
   after_save do |record|
     record.user.increment!(:book_size)
@@ -784,7 +784,7 @@ class Book < ApplicationRecord
 end
 ```
 	* コールバックメソッドの引数にコールバックのメソッドを持つクラスを指定
-```ruby
+	  ```ruby
 class Book < ApplicationRecord
   after_create BooksSizeIncrement.new
 end
@@ -797,4 +797,3 @@ class BooksSizeIncrement
     record.user.increment!(:books_size)
   end
 ```
-
