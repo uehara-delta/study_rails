@@ -533,7 +533,7 @@ $ bundle exec rake db:migrate
 * changed?
 	* モデルオブジェクトにデータベースに保存していない変更があるか確認
 * create
-	* newメソッドとsageメソッドを同時に実行
+	* newメソッドとsaveメソッドを同時に実行
 * update
 	* モデルオブジェクトの変更とデータベースの更新を同時に実行
 
@@ -620,3 +620,181 @@ $ bundle exec rake db:migrate
 	* update_attribute : バリデーションをせず、特定のカラムを更新するモデルオブジェクトのメソッド
 	* update_column : バリデーションとコールバックをせず、特定のカラムを更新するモデルオブジェクトのメソッド
 	* update_columns : バリデーションとコールバックをせず、複数のカラムを更新するモデルオブジェクトのメソッド
+
+### 関連を作成
+
+#### 一対多の関連
+
+```
+$ bundle exec rails generate model book title:string author:string outline:text
+$ bundle exec rails generate migration AddUserIdToBook user_id:integer
+$ bundle exec rake db:migrate
+```
+app/models/book.rb を編集
+```ruby
+class Book < ApplicationRecord
+  belongs_to :user
+end
+```
+* ApplicationRecord
+	* Rais 5 からモデルの継承元が ActiveRecord::Base から ApplicationRecord に変更
+
+app/models/user.rb を編集
+```ruby
+class User < ApplicationRecord
+  has_many :books
+end
+```
+
+* belongs_to のオプション
+	* dependent : 値に「:destroy」を設定すると、そのモデルオブジェクトが「destroy」メソッドにより削除されたときに参照しているモデルオブジェクトの「destroy」メソッドも実行して削除する
+	* foreign_key : 外部キーを標準の「第一引数 + _id」とは別の名前にする
+	* class_name : 関連名と参照先モデル名が異なる場合、関連が対象とするモデルを指定する
+
+* has_many のオプション
+	* dependent : 値に「:destory」を設定すると、「destory」メソッドにより削除されたときにすべての関連するモデルオブジェクトを削除、「:destory_all」を設定すると、「コールバック」なしで関連するモデルオブジェクトのレコードに SQL の DELETE文を実行する
+	* foreign_key : 参照元モデルにおいて「関連」名に「_id」を付けた名前ではないカラムを外部キーの格納場所としている場合、参照先モデル側でも「:foreign_key」オプションを指定する必要がある
+	* class_name : 「関連」名が小文字の参照元モデル名の複数形と異なる場合、「関連」が対象とするモデルを指定する
+
+#### 一対一の関連
+
+参照元モデルは「belongs_to」で定義し、参照先モデルでは「has_many」の代わりに「has_one」を使用する。
+
+#### 多対多の関連
+
+多対多の関連を作るには対象の2つのモデルとは別に接続情報を持つモデルが必要になる。
+
+```
+$ bundle exec rails generate model tag name:string
+$ bundle exec rails generate model tagging tag:references book:references
+$ bundle exec rake db:migrate
+```
+
+* generate mode で指定している references は参照型
+	* データベースにインデックスを追加
+	* モデルの定義にあらかじめ「belongs_to」を生成
+
+app/models/book.rb を編集
+```ruby
+class Book < ApplicationRecord
+  belongs_to :user
+  has_many :taggins
+  has_many :tags, through: :taggings
+end
+```
+
+app/models/tag.rb を編集
+```ruby
+class Tag < ApplicationRecord
+  has_many :taggings
+  has_many :books, through: :taggings
+end
+```
+
+#### 「関連」に基づく検索
+
+* 関連しているオブジェクトに条件を指定して検索を行う
+```ruby
+book_rails = Book.fined_by(title: "Rails入門")
+book_rails.tags.where(name: "Ruby")
+```
+
+* 関連先のモデルの属性を対象に関連元のモデルの検索を行う
+```ruby
+Book.joins(:tags).where(tags: {name: "Rails"})
+Book.joins(:tags).where("tag.name = ?", "Rails")
+```
+
+#### 「スコープ」による検索条件の登録
+
+よく使う検索条件にはモデル中にあらかじめ名前をつけて定義して「スコープ」という仕組みがある。
+```ruby
+class Book < ApplicationRecord
+  belongs_to :user
+  has_many :taggings
+  has_many :tags, through: :taggings
+  scope :tagged_recommended, -> { joins(:tags).where(tags {name: 'recommended'}) }
+end
+```
+
+* 第１引数にスコープ名、第２引数に検索状家をラムダ(->)で与える
+	* ラムダで渡すのは処理の中身を遅延実行させるため
+
+### コールバック
+
+モデルオブジェクトが保存されるときなど、モデルオブジェクトに関する特定のイベントが発生した際に実行したい処理を指定しておく仕組み。
+
+* コールバックを実行するメソッドでオブジェクトの保存や更新に関わるもの
+	* create
+	* create!
+	* decrement!
+	* destroy
+	* destroy_all
+	* increment!
+	* save
+	* save!
+	* save(validate: false)
+	* toggle!
+	* update_attribute
+	* update
+	* update!
+	* valid?
+
+* コールバックの種類
+	* 新規作成(create)系メソッドと更新(update)系メソッドのコールバック
+		* before_validation
+		* after_validation
+		* before_save
+		* around_save
+		* before_create
+		* before_update
+		* around_create
+		* around_update
+		* after_create
+		* after_update
+		* after_save
+	* 削除(destroy)系メソッドのコールバック
+		* before_destroy
+		* around_destroy
+		* after_destroy
+
+* コールバックの指定方法
+	* コールバックメソッドの引数に処理を行うメソッドのシンボルを指定
+```ruby
+class Book < ApplicationRecord
+  after_save :increment_user_books_size
+  private
+  def increment_user_books_size
+    self.user.increment!(:books_size)
+  end
+end
+```
+	* コールバックメソッドの引数に処理を記述した文字列を指定
+```ruby
+class Book < ApplicationRecord
+  after_save "self.user.increament!(:book_size)"
+end
+```
+	* コールバックメソッドにブロックを指定
+```ruby
+class Book < ApplicationRecord
+  after_save do |record|
+    record.user.increment!(:book_size)
+  end
+end
+```
+	* コールバックメソッドの引数にコールバックのメソッドを持つクラスを指定
+```ruby
+class Book < ApplicationRecord
+  after_create BooksSizeIncrement.new
+end
+
+class BooksSizeIncrement
+  def initialize()
+  end
+
+  def after_create(record)
+    record.user.increment!(:books_size)
+  end
+```
+
