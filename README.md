@@ -759,7 +759,8 @@ end
 		* after_destroy
 
 * コールバックの指定方法
-	* コールバックメソッドの引数に処理を行うメソッドのシンボルを指定
+
+コールバックメソッドの引数に処理を行うメソッドのシンボルを指定
 ```ruby
 class Book < ApplicationRecord
   after_save :increment_user_books_size
@@ -769,22 +770,25 @@ class Book < ApplicationRecord
   end
 end
 ```
-	* コールバックメソッドの引数に処理を記述した文字列を指定
-	  ```ruby
+
+コールバックメソッドの引数に処理を記述した文字列を指定
+```ruby
 class Book < ApplicationRecord
   after_save "self.user.increament!(:book_size)"
 end
 ```
-	* コールバックメソッドにブロックを指定
-	  ```ruby
+
+コールバックメソッドにブロックを指定
+```ruby
 class Book < ApplicationRecord
   after_save do |record|
     record.user.increment!(:book_size)
   end
 end
 ```
-	* コールバックメソッドの引数にコールバックのメソッドを持つクラスを指定
-	  ```ruby
+
+コールバックメソッドの引数にコールバックのメソッドを持つクラスを指定
+```ruby
 class Book < ApplicationRecord
   after_create BooksSizeIncrement.new
 end
