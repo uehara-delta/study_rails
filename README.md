@@ -6,6 +6,8 @@
 	* https://www.atmarkit.co.jp/ait/articles/1405/09/news038.html
 	* https://www.atmarkit.co.jp/ait/articles/1405/16/news024.html
 	* https://www.atmarkit.co.jp/ait/articles/1405/30/news036.html
+	* https://www.atmarkit.co.jp/ait/articles/1406/30/news030.html
+	* https://www.atmarkit.co.jp/ait/articles/1407/30/news031.html
 	* https://qiita.com/yuitnnn/items/b45bba658d86eabdbb26
 
 ## Railsプロジェクト作成
@@ -20,6 +22,17 @@ $ bundle init
 ```
 
 生成された Gemfile を編集して `gem "rails"` のコメントを外す。
+```
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
+
+gem "rails"
+```
+
+`--path vendor/bundle` を指定して `bundle install` を実行後、`bundle exec rails new` を実行する。
 
 ```
 $ bundle install --path vendor/bundle
@@ -27,8 +40,13 @@ $ bundle exec rails new . -B -d mysql
 ```
 
 `bundle exec rails new` のオプション -B は bundle install を実行しない、-d は使用する DB を指定するという意味。
+Gemfile を上書きするかどうかをきかれるので Y を入力して続行。
 
-Gemfile を上書きするかどうかをきかれるので`bundle install --path vendor/bundle`
+改めて`bundle install --path vendor/bundle` を実行する。
+
+```
+$ bundle install --path vendor/bundle
+```
 
 mysql2 のインストールでエラーが発生するのでオプションを追加
 
@@ -800,4 +818,101 @@ class BooksSizeIncrement
   def after_create(record)
     record.user.increment!(:books_size)
   end
+```
+
+## コントローラーとルーティング
+
+```
+$ bundle exec rails generate controller admin/books --helper=false --asserts=false
+      create  app/controllers/admin/books_controller.rb
+      invoke  erb
+      create    app/views/admin/books
+      invoke  test_unit
+      create    test/controllers/admin/books_controller_test.rb
+      invoke  assets
+      invoke    coffee
+      create      app/assets/javascripts/admin/books.coffee
+      invoke    scss
+      create      app/assets/stylesheets/admin/books.scss
+```
+
+### アクションの実装
+
+app/controllers/admin/books_controller.rb を編集
+```ruby
+class Admin::BooksController < ApplicationController
+  def index
+    @books = Book.all
+  end
+end
+```
+
+### ルーティング
+
+config/routes.rb を編集
+```ruby
+Rails.application.routes.draw do
+  resources :books
+  resources :users
+  get 'admin' => 'admin/books#index'
+end
+```
+
+### レンダリング
+
+app/views/admin/books/index.html.erb を作成
+```erb
+<p id="notice"><%= notice %></p>
+
+<h1>Books</h1>
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Author</th>
+      <th>Outline</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @books.each do |book| %>
+    <tr>
+      <td><%= book.title %></td>
+      <td><%= book.author %></td>
+      <td><%= book.outline %></td>
+      <td><%= link_to 'Show', book %></td>
+      <td><%= link_to 'Edit', edit_book_path(book) %></td>
+      <td><%= link_to 'Destroy', book, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+    </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New Book', new_book_path %>
+```
+
+### コントローラーの機能
+
+#### パラメーター
+
+* パラメーターの種類
+	* URL文字列中に含める「クエリ文字列パラメーター」
+	* ルーティングで定義される「ルーティングパラメーター」
+	* POSTリクエストの「POSTデータパラメーター」
+
+
+##### Stong Parameter
+
+Rails 4 から導入された Strong Parameter はリクエストに含まれていてもよいパラメーターをコントローラーで指定する機能。
+
+以下のコードは Rails 4 からエラーになる。
+```ruby
+params[:book] = {
+  "title" => "新しい本",
+  "author" => "新しい作者",
+}
+Book.new(params[:book])
+=> ActiveModel::ForbiddenAttributesError:
 ```
