@@ -916,3 +916,28 @@ params[:book] = {
 Book.new(params[:book])
 => ActiveModel::ForbiddenAttributesError:
 ```
+
+## 「N+1クエリ」問題
+
+モデルオブジェクトのコレクションをレコードごとに順に参照する場合に起こりがちなパフォーマンスに関わる問題。
+
+* 例) BookモデルとAuthorモデルがあり、BookモデルがAuthorモデルを参照しているとする
+```ruby
+#コントローラー
+@books = Book.all
+
+#ビュー
+- @books.each do |book|
+  = book.title
+  = book.author.name
+```
+* この時、`book.author.name`の呼び出しごとにデータベースへの問い合わせが発生する
+* ActiveRecordの「includes」メソッドにより、あらかじめ関連モデルを読み込んでおくことができる
+```ruby
+@books = Book.includes(:author)
+```
+* includes に似たメソッドに joins があるが振る舞いが異なる。
+	* includes は通常、別途 select を実行して結果をキャッシュする
+	* joins は INNER JOIN を追加した select を実行する(結果の件数が includes と異なる)
+	* includes と references で LEFT OUTER JOIN になったり(distinct されるため件数は includesと同じ)、includes と joins を組み合わせたり(distinct されない)もできる
+	* 参考： https://qiita.com/south37/items/b2c81932756d2cd84d7d
