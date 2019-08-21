@@ -42,16 +42,15 @@ $ bundle exec rails new . -B -d mysql
 `bundle exec rails new` のオプション -B は bundle install を実行しない、-d は使用する DB を指定するという意味。
 Gemfile を上書きするかどうかをきかれるので Y を入力して続行。
 
-改めて`bundle install --path vendor/bundle` を実行する。
-
-```
-$ bundle install --path vendor/bundle
-```
-
 mysql2 のインストールでエラーが発生するのでオプションを追加
 
 ```
-$ bundle config --local build.mysql2 "--with-cppflags=-I/usr/local/opt/openssl/include --with-ldflags=-L/usr/local/opt/openssl/lib"
+$ bundle config --local build.mysql2 "--with-ldflags=-L/usr/local/opt/openssl/lib"
+```
+
+改めて`bundle install --path vendor/bundle` を実行する。
+
+```
 $ bundle install --path vendor/bundle
 ```
 
